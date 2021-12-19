@@ -152,16 +152,14 @@ def time_to_seconds(time):
 
 @Bot.on_message(filters.command(['song']))
 def a(client, message):
-    query = ''
-    for i in message.command[1:]:
-        query += ' ' + str(i)
+    query = ''.join(' ' + str(i) for i in message.command[1:])
     print(query)
     m = message.reply('`Searching... Please Wait...`')
     ydl_opts = {"format": "bestaudio[ext=m4a]"}
     try:
         results = []
         count = 0
-        while len(results) == 0 and count < 6:
+        while not results and count < 6:
             if count>0:
                 time.sleep(1)
             results = YoutubeSearch(query, max_results=1).to_dict()
@@ -180,7 +178,7 @@ def a(client, message):
             #     m.edit("Exceeded 30mins cap")
             #     return
 
-            performer = f"[@NazriyaSongBot]" 
+            performer = '[@NazriyaSongBot]'
             thumb_name = f'thumb{message.message_id}.jpg'
             thumb = requests.get(thumbnail, allow_redirects=True)
             open(thumb_name, 'wb').write(thumb.content)
@@ -193,7 +191,7 @@ def a(client, message):
         m.edit(
             "**Enter The Song Name with /song command.!**"
         )
-        print(str(e))
+        print(e)
         return
     m.edit("`AM...Uploading To TG now... Please Wait...`")
     try:
@@ -276,46 +274,47 @@ async def broadcast_(c, m):
         return
     all_users = await db.get_all_users()
     broadcast_msg = m.reply_to_message
-    
+
     while True:
         broadcast_id = ''.join([random.choice(string.ascii_letters) for i in range(3)])
         if not broadcast_ids.get(broadcast_id):
             break
-    
+
     out = await m.reply_text(
-        text = f"Broadcast initiated! You will be notified with log file when all the users are notified."
+        text='Broadcast initiated! You will be notified with log file when all the users are notified.'
     )
+
     start_time = time.time()
     total_users = await db.total_users_count()
     done = 0
     failed = 0
     success = 0
-    
+
     broadcast_ids[broadcast_id] = dict(
         total = total_users,
         current = done,
         failed = failed,
         success = success
     )
-    
+
     async with aiofiles.open('broadcast.txt', 'w') as broadcast_log_file:
         async for user in all_users:
-            
+
             sts, msg = await send_msg(
                 user_id = int(user['id']),
                 message = broadcast_msg
             )
             if msg is not None:
                 await broadcast_log_file.write(msg)
-            
+
             if sts == 200:
                 success += 1
             else:
                 failed += 1
-            
+
             if sts == 400:
                 await db.delete_user(user['id'])
-            
+
             done += 1
             if broadcast_ids.get(broadcast_id) is None:
                 break
@@ -330,11 +329,11 @@ async def broadcast_(c, m):
     if broadcast_ids.get(broadcast_id):
         broadcast_ids.pop(broadcast_id)
     completed_in = datetime.timedelta(seconds=int(time.time()-start_time))
-    
+
     await asyncio.sleep(3)
-    
+
     await out.delete()
-    
+
     if failed == 0:
         await m.reply_text(
             text=f"broadcast completed in `{completed_in}`\n\nTotal users {total_users}.\nTotal done {done}, {success} success and {failed} failed.",
@@ -346,7 +345,7 @@ async def broadcast_(c, m):
             caption=f"broadcast completed in `{completed_in}`\n\nTotal users {total_users}.\nTotal done {done}, {success} success and {failed} failed.",
             quote=True
         )
-    
+
     await aiofiles.os.remove('broadcast.txt')
 
 @Bot.on_message(filters.command("lyrics"))
